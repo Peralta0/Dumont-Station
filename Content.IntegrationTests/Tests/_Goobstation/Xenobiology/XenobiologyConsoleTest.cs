@@ -624,6 +624,79 @@ public sealed class XenobiologyConsoleTest
     }
 
     [Test]
+    public async Task GrinderProcessesThreeCorpsesReleasedOnTopOfIt()
+    {
+        var pair = await PoolManager.GetServerClient();
+        var ctx = await Setup(pair);
+        EntityUid grinder = default;
+        var corpses = new List<EntityUid>();
+        var expectedExtracts = 0;
+        EntityUid livingSlime = default;
+        EntityUid adjacentCorpse = default;
+        HashSet<EntityUid> existingExtracts = [];
+
+        await ctx.Server.WaitPost(() =>
+        {
+            ActivateConsole(ctx);
+            var console = ctx.EntMan.GetComponent<XenobiologyConsoleComponent>(ctx.Console);
+            var controller = ctx.EntMan.GetComponent<XenobiologyConsoleControllerComponent>(ctx.User);
+            var coords = ctx.EntMan.GetComponent<TransformComponent>(console.RemoteEntity!.Value).Coordinates;
+            grinder = SpawnTestGrinder(ctx, coords);
+            ctx.EntMan.GetComponent<SlimeGrinderComponent>(grinder).ProcessingTimePerUnitMass = 0.001f;
+            existingExtracts = FindEntitiesByPrototype(ctx, "GreySlimeExtract");
+
+            for (var i = 0; i < 3; i++)
+            {
+                var slime = SpawnTestSlime(ctx, coords);
+                ctx.EntMan.System<MobStateSystem>()
+                    .ChangeMobState(slime, MobState.Dead, ctx.EntMan.GetComponent<MobStateComponent>(slime));
+                expectedExtracts += ctx.EntMan.GetComponent<SlimeComponent>(slime).ExtractsProduced;
+                corpses.Add(slime);
+                PerformAction(ctx, controller.GrabSlimeActionEntity);
+            }
+
+            Assert.That(console.SlimeContainer.ContainedEntities.Count, Is.EqualTo(3));
+            PerformAction(ctx, controller.ReleaseSlimesActionEntity);
+            Assert.That(console.SlimeContainer.ContainedEntities, Is.Empty);
+            Assert.That(corpses.All(uid => ctx.EntMan.EntityExists(uid)), Is.True);
+
+            livingSlime = SpawnTestSlime(ctx, coords);
+            adjacentCorpse = SpawnTestSlime(ctx, coords.Offset(new Vector2(1, 0)));
+            ctx.EntMan.System<MobStateSystem>()
+                .ChangeMobState(adjacentCorpse, MobState.Dead, ctx.EntMan.GetComponent<MobStateComponent>(adjacentCorpse));
+
+            var power = ctx.EntMan.GetComponent<ApcPowerReceiverComponent>(grinder);
+            power.Powered = false;
+            var unpoweredActivate = new ActivateInWorldEvent(ctx.User, grinder, true);
+            ctx.EntMan.EventBus.RaiseLocalEvent(grinder, unpoweredActivate);
+            Assert.That(unpoweredActivate.Handled, Is.False);
+            Assert.That(corpses.All(uid => ctx.EntMan.EntityExists(uid)), Is.True);
+            power.Powered = true;
+
+            var activate = new ActivateInWorldEvent(ctx.User, grinder, true);
+            ctx.EntMan.EventBus.RaiseLocalEvent(grinder, activate);
+            Assert.That(activate.Handled, Is.True);
+        });
+
+        await pair.RunTicksSync(60);
+
+        await ctx.Server.WaitPost(() =>
+        {
+            var grinderComp = ctx.EntMan.GetComponent<SlimeGrinderComponent>(grinder);
+            Assert.That(corpses.Any(uid => ctx.EntMan.EntityExists(uid)), Is.False);
+            Assert.That(ctx.EntMan.EntityExists(livingSlime), Is.True);
+            Assert.That(ctx.EntMan.EntityExists(adjacentCorpse), Is.True);
+            Assert.That(grinderComp.YieldQueue, Is.Empty);
+            Assert.That(ctx.EntMan.HasComponent<ActiveSlimeGrinderComponent>(grinder), Is.False);
+            var extracts = FindEntitiesByPrototype(ctx, "GreySlimeExtract");
+            extracts.ExceptWith(existingExtracts);
+            Assert.That(extracts.Count, Is.EqualTo(expectedExtracts));
+        });
+
+        await pair.CleanReturnAsync();
+    }
+
+    [Test]
     public async Task SlimeGrinderRejectsStoredSlime()
     {
         var pair = await PoolManager.GetServerClient();

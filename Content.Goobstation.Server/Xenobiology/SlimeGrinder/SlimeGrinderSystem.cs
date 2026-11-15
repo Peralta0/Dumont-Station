@@ -24,6 +24,8 @@ using Content.Shared.Verbs;
 using Robust.Server.Containers;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Containers;
+using Robust.Shared.Map;
+using Robust.Shared.Map.Components;
 using Robust.Shared.Physics.Components;
 using Robust.Shared.Random;
 
@@ -38,6 +40,8 @@ public sealed partial class SlimeGrinderSystem : EntitySystem
     [Dependency] private readonly ThrowingSystem _throwing = default!;
     [Dependency] private readonly IRobustRandom _robustRandom = default!;
     [Dependency] private readonly ContainerSystem _container = default!;
+    [Dependency] private EntityLookupSystem _lookup = default!;
+    [Dependency] private SharedMapSystem _map = default!;
 
     public override void Initialize()
     {
@@ -186,6 +190,9 @@ public sealed partial class SlimeGrinderSystem : EntitySystem
         if (!CanStartProcessing(grinder))
             return false;
 
+        foreach (var slime in GetCorpsesOnGrinder(grinder))
+            TryQueueProcess(slime, grinder);
+
         foreach (var slime in grinder.Comp.SlimeContainer.ContainedEntities.ToArray())
             QueueYield(slime, grinder);
 
@@ -233,7 +240,31 @@ public sealed partial class SlimeGrinderSystem : EntitySystem
     {
         return Transform(grinder).Anchored &&
                !HasComp<ActiveSlimeGrinderComponent>(grinder) &&
-               grinder.Comp.SlimeContainer.ContainedEntities.Count > 0 &&
-               (!TryComp<ApcPowerReceiverComponent>(grinder, out var power) || power.Powered);
+               (!TryComp<ApcPowerReceiverComponent>(grinder, out var power) || power.Powered) &&
+               (grinder.Comp.SlimeContainer.ContainedEntities.Count > 0 || GetCorpsesOnGrinder(grinder).Any());
+    }
+
+    private IEnumerable<Entity<SlimeComponent>> GetCorpsesOnGrinder(Entity<SlimeGrinderComponent> grinder)
+    {
+        var xform = Transform(grinder);
+        if (xform.GridUid is not { } gridUid || !TryComp<MapGridComponent>(gridUid, out var grid))
+            yield break;
+
+        var tile = _map.TileIndicesFor(gridUid, grid, xform.Coordinates);
+        foreach (var slime in _lookup.GetEntitiesInRange<SlimeComponent>(
+                     xform.Coordinates,
+                     grid.TileSize,
+                     LookupFlags.Dynamic | LookupFlags.Approximate))
+        {
+            if (!CanQueue(grinder, slime))
+                continue;
+
+            var slimeXform = Transform(slime);
+            if (slimeXform.GridUid == gridUid &&
+                _map.TileIndicesFor(gridUid, grid, slimeXform.Coordinates) == tile)
+            {
+                yield return slime;
+            }
+        }
     }
 }
