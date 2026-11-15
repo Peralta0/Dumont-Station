@@ -980,6 +980,10 @@
     currentLabel: reagent-name-cream
   - type: Sprite
     sprite: Objects/Consumable/Drinks/cream.rsi
+  - type: Tag
+    tags:
+      - CoffeeDispensable
+      - DrinkBottle
 
 #boring jugs some more sprites are made
 
@@ -1000,6 +1004,10 @@
   - type: Drink
   - type: Label
     currentLabel: reagent-name-sugar
+  - type: Tag
+    tags:
+      - CoffeeDispensable
+      - DrinkBottle
 
 - type: entity
   parent: [DrinkBottleVisualsOpenable, DrinkBottlePlasticBaseFull]
@@ -1051,6 +1059,10 @@
   - type: Drink
   - type: Label
     currentLabel: reagent-name-ice
+  - type: Tag
+    tags:
+      - CoffeeDispensable
+      - DrinkBottle
 
 - type: entity
   parent: [DrinkBottleVisualsOpenable, DrinkBottlePlasticBaseFull]
@@ -1085,6 +1097,10 @@
   - type: Drink
   - type: Label
     currentLabel: reagent-name-coffee
+  - type: Tag
+    tags:
+      - CoffeeDispensable
+      - DrinkBottle
 
 - type: entity
   parent: [DrinkBottleVisualsOpenable, DrinkBottlePlasticBaseFull]

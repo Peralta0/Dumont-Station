@@ -10,6 +10,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 using System.Diagnostics.CodeAnalysis;
+using Content.Goobstation.Common.Heretic;
 using Content.Shared.Hands;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Interaction;
@@ -19,6 +20,7 @@ using Content.Shared.Item;
 using Content.Shared.Popups;
 using Robust.Shared.Containers;
 using Robust.Shared.Prototypes;
+using Robust.Shared.Timing; // Goob edit
 
 namespace Content.Shared.Inventory.VirtualItem;
 
@@ -40,6 +42,7 @@ public abstract class SharedVirtualItemSystem : EntitySystem
     [Dependency] private readonly InventorySystem _inventorySystem = default!;
     [Dependency] private readonly SharedHandsSystem _handsSystem = default!;
     [Dependency] private readonly SharedPopupSystem _popup = default!;
+    [Dependency] private readonly IGameTiming _timing = default!; // Goob edit
 
     private static readonly EntProtoId VirtualItem = "VirtualItem";
 
@@ -243,6 +246,11 @@ public abstract class SharedVirtualItemSystem : EntitySystem
         var pos = Transform(user).Coordinates;
         virtualItem = PredictedSpawnAttachedTo(VirtualItem, pos);
         var virtualItemComp = EnsureComp<VirtualItemComponent>(virtualItem.Value);
+        // <Trauma>
+        var ev = new GetVirtualItemBlockingEntityEvent(blockingEnt);
+        RaiseLocalEvent(blockingEnt, ref ev);
+        blockingEnt = ev.Uid;
+        // </Trauma>
         virtualItemComp.BlockingEntity = blockingEnt;
         Dirty(virtualItem.Value, virtualItemComp);
         return true;
@@ -263,7 +271,8 @@ public abstract class SharedVirtualItemSystem : EntitySystem
             return;
 
         // Goob edit start
-        if (queueDel)
+        // Never delete immediately while applying server state (e.g. PVS detach), the client would really delete a networked entity.
+        if (queueDel || _timing.ApplyingState)
             PredictedQueueDel(item.Owner);
         else
             PredictedDel(item.Owner);

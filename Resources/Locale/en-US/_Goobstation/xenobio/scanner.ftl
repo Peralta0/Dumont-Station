@@ -1,6 +1,6 @@
 slime-scanner-examine-slime-description = It is a [color={$color}]{$name}[/color].
 
-slime-scanner-examine-slime-mutations = It's chance of mutation on mitosis is [color=yellow]{$chance}%[/color]. It's possible mutations are:
+slime-scanner-examine-slime-mutations = Its chance of mutation during mitosis is [color=yellow]{$chance}%[/color]. Its possible mutations are:
 
 slime-scanner-examine-slime-extracts = If you were to grind it right now, it would yield [color=yellow]{$num}[/color] extracts.
 
