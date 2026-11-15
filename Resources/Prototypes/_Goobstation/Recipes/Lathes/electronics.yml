@@ -104,7 +104,9 @@
 
 - type: latheRecipe
   parent: [ BaseGoldCircuitboardRecipe, BaseResearchMachineRecipeCategory ]
-  icon: { sprite: Structures/Machines/Medical/biomass_reclaimer.rsi, state: icon } # Todo - Change this sprite.
+  icon:
+    sprite: _Goobstation/Xenobiology/Specific/Xenobiology/slime_processor.rsi
+    state: processor
   id: SlimeGrinderMachineCircuitboard
   result: SlimeGrinderMachineCircuitboard
 
@@ -115,6 +117,12 @@
   icon:
     sprite: Structures/Machines/computers.rsi
     state: xenobiology
+
+- type: latheRecipe
+  parent: [ BaseCircuitboardRecipe, BaseResearchComputerRecipeCategory ]
+  icon: _Goobstation/Structures/Machines/Icons/Computers/xenobiology.png
+  id: XenobiologyBountyComputerCircuitboard
+  result: XenobiologyBountyComputerCircuitboard
 
 - type: latheRecipe
   parent: BaseGoldCircuitboardRecipe

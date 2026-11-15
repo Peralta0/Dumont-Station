@@ -13,7 +13,8 @@ using System.Linq;
 using System.Text;
 
 namespace Content.Goobstation.Server.Xenobiology;
-public sealed partial class SlimeScannerSystem : EntitySystem
+
+public sealed class SlimeScannerSystem : EntitySystem
 {
     [Dependency] private IChatManager _chat = default!;
     [Dependency] private readonly ExamineSystemShared _examineSystem = default!;
@@ -66,16 +67,17 @@ public sealed partial class SlimeScannerSystem : EntitySystem
 
     private string GenerateSlimeMarkup(Entity<SlimeComponent> ent)
     {
-        var mutationChance = MathF.Floor(ent.Comp.MutationChance * 100f);
+        var mutationChancePercent = MathF.Floor(ent.Comp.MutationChance * 100f);
+        var breedName = Loc.GetString(ent.Comp.BreedName);
 
         var sb = new StringBuilder();
 
         sb.AppendLine(Loc.GetString(
             "slime-scanner-examine-slime-description",
             ("color", ent.Comp.SlimeColor.ToHex()),
-            ("name", GetBreedName(ent.Comp.Breed))));
+            ("name", breedName)));
 
-        sb.Append($"{Loc.GetString("slime-scanner-examine-slime-mutations", ("chance", mutationChance))} ");
+        sb.Append($"{Loc.GetString("slime-scanner-examine-slime-mutations", ("chance", mutationChancePercent))} ");
         var mutations = ent.Comp.PotentialMutations.ToList();
         for (int i = 0; i < mutations.Count; i++)
         {
@@ -84,21 +86,23 @@ public sealed partial class SlimeScannerSystem : EntitySystem
             var color = "white";
             // todo make the colors work
             if (info.Components.TryGetComponent(nameof(SlimeComponent), out var sc))
-                color = ((SlimeComponent) sc!).SlimeColor.ToHex();
+                color = ((SlimeComponent) sc).SlimeColor.ToHex();
 
-            sb.Append($"[color={color}]{GetBreedName(mutations[i])}[/color]");
+            var mutationName = info.TryComp<SlimeComponent>(out var mutation, EntityManager.ComponentFactory)
+                ? Loc.GetString(mutation.BreedName)
+                : info.Name;
+            sb.Append($"[color={color}]{mutationName}[/color]");
 
-            if (i == mutations.Count - 1) sb.AppendLine(".");
-            else sb.Append(", ");
+            if (i == mutations.Count - 1)
+                sb.AppendLine(".");
+            else
+                sb.Append(", ");
         }
 
         sb.AppendLine(Loc.GetString("slime-scanner-examine-slime-extracts", ("num", ent.Comp.ExtractsProduced)));
 
         return sb.ToString();
     }
-
-    private string GetBreedName(ProtoId<BreedPrototype> breed)
-        => Loc.GetString($"slime-scanner-breed-{breed}");
 
     private string GenerateExtractMarkup(Entity<SlimeExtractComponent> ent)
     {
@@ -130,12 +134,16 @@ public sealed partial class SlimeScannerSystem : EntitySystem
                     continue;
 
                 // jic
-                if (i == reagents.Count - 1) sb.Append("; ");
-                else sb.Append(", ");
+                if (i == reagents.Count - 1)
+                    sb.Append("; ");
+                else
+                    sb.Append(", ");
             }
 
-            if (i == reactions.Count - 1) sb.AppendLine(".");
-            else sb.Append(", ");
+            if (i == reactions.Count - 1)
+                sb.AppendLine(".");
+            else
+                sb.Append(", ");
         }
 
         return sb.ToString();
