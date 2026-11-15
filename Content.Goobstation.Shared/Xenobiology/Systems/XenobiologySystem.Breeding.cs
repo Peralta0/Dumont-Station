@@ -27,6 +27,8 @@ public partial class XenobiologySystem
     [Dependency] private readonly SharedBodySystem _body = default!;
     [Dependency] private readonly StomachSystem _stomach = default!;
 
+    private readonly List<Entity<SlimeComponent>> _pendingMitosis = [];
+
     private void SubscribeBreeding()
     {
         SubscribeLocalEvent<RandomSlimeChangeComponent, MapInitEvent>(OnPendingSlimeMapInit);
@@ -69,6 +71,7 @@ public partial class XenobiologySystem
     /// </summary>
     private void UpdateMitosis()
     {
+        _pendingMitosis.Clear();
         var query = EntityQueryEnumerator<SlimeComponent, MobGrowthComponent, HungerComponent>();
         while (query.MoveNext(out var uid, out var slime, out var growthComp, out var hungerComp))
         {
@@ -83,8 +86,17 @@ public partial class XenobiologySystem
             if (_hunger.GetHunger(hungerComp) < slime.MitosisHunger)
                 continue;
 
-            DoMitosis((uid, slime));
-            slime.NextUpdateTime = _gameTiming.CurTime + slime.UpdateInterval;
+            _pendingMitosis.Add((uid, slime));
+        }
+
+        // Spawning offspring changes the component collection used by the query.
+        foreach (var slime in _pendingMitosis)
+        {
+            if (TerminatingOrDeleted(slime))
+                continue;
+
+            DoMitosis(slime);
+            slime.Comp.NextUpdateTime = _gameTiming.CurTime + slime.Comp.UpdateInterval;
         }
     }
 
