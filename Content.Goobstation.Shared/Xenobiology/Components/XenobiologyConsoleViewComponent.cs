@@ -13,9 +13,15 @@ namespace Content.Goobstation.Shared.Xenobiology.Components;
 [RegisterComponent, NetworkedComponent, AutoGenerateComponentState(raiseAfterAutoHandleState: true)]
 public sealed partial class XenobiologyConsoleViewComponent : Component
 {
+    /// <summary>
+    /// Camera network tag required for viewing and remote interactions.
+    /// </summary>
     [DataField, AutoNetworkedField]
     public string RequiredCameraTag = "Xenobiology";
 
+    /// <summary>
+    /// Extra distance around the viewport to search for cameras contributing visible tiles.
+    /// </summary>
     [DataField, AutoNetworkedField]
     public float CameraOverlaySearchRange = 16f;
 

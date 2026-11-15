@@ -8,6 +8,7 @@ using Content.Shared.Interaction;
 using Content.Shared.Physics;
 using Robust.Shared.Map;
 using Robust.Shared.Map.Components;
+using Robust.Shared.Physics;
 
 namespace Content.Goobstation.Shared.SurveillanceCamera;
 
@@ -117,7 +118,7 @@ public sealed partial class SharedConsoleCameraSystem : EntitySystem
 
         foreach (var entity in _intersectingEntities)
         {
-            if (!TryComp<Robust.Shared.Physics.FixturesComponent>(entity, out var fixtures))
+            if (!TryComp<FixturesComponent>(entity, out var fixtures))
                 continue;
 
             foreach (var fixture in fixtures.Fixtures.Values)

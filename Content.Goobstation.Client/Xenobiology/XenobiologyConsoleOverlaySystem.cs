@@ -14,13 +14,11 @@ public sealed partial class XenobiologyConsoleOverlaySystem : EntitySystem
     [Dependency] private IOverlayManager _overlay = default!;
     [Dependency] private IPlayerManager _player = default!;
 
-    private XenobiologyConsoleOverlay _consoleOverlay = default!;
+    private XenobiologyConsoleOverlay? _consoleOverlay;
 
     public override void Initialize()
     {
         base.Initialize();
-
-        _consoleOverlay = new();
 
         SubscribeLocalEvent<XenobiologyConsoleViewComponent, ComponentInit>(OnViewInit);
         SubscribeLocalEvent<XenobiologyConsoleViewComponent, ComponentRemove>(OnViewRemove);
@@ -33,7 +31,6 @@ public sealed partial class XenobiologyConsoleOverlaySystem : EntitySystem
         base.Shutdown();
 
         RemoveOverlay();
-        _consoleOverlay.Dispose();
     }
 
     private void OnViewInit(Entity<XenobiologyConsoleViewComponent> ent, ref ComponentInit args)
@@ -60,13 +57,17 @@ public sealed partial class XenobiologyConsoleOverlaySystem : EntitySystem
 
     private void AddOverlay()
     {
-        if (!_overlay.HasOverlay<XenobiologyConsoleOverlay>())
-            _overlay.AddOverlay(_consoleOverlay);
+        if (_consoleOverlay != null)
+            return;
+
+        _consoleOverlay = new XenobiologyConsoleOverlay();
+        _overlay.AddOverlay(_consoleOverlay);
     }
 
     private void RemoveOverlay()
     {
         _overlay.RemoveOverlay<XenobiologyConsoleOverlay>();
-        _consoleOverlay.ReleaseResources();
+        _consoleOverlay?.Dispose();
+        _consoleOverlay = null;
     }
 }

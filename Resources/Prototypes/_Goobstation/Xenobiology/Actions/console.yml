@@ -84,11 +84,11 @@
   description: Analyze the closest slime to the cursor.
   components:
   - type: Action
-    itemIconStyle: BigItem
+    itemIconStyle: BigAction
     useDelay: 0.5
-  - type: Sprite
-    sprite: _Goobstation/Xenobiology/Interface/xenobiology_console.rsi
-    state: scan_slime
+    icon:
+      sprite: _Goobstation/Xenobiology/Interface/xenobiology_console.rsi
+      state: scan_slime
   - type: InstantAction
     event: !type:XenobiologyConsoleAnalyzeSlimeEvent
 

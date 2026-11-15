@@ -83,7 +83,8 @@ public sealed partial class XenobiologyConsoleOverlay : Overlay
             return;
         }
 
-        if (_stencilTexture?.Texture.Size != args.Viewport.Size)
+        if (_stencilTexture?.Texture.Size != args.Viewport.Size ||
+            _staticTexture?.Texture.Size != args.Viewport.Size)
         {
             _staticTexture?.Dispose();
             _stencilTexture?.Dispose();
