@@ -46,6 +46,12 @@ public sealed partial class XenobiologySystem : EntitySystem
         SubscribeBreeding();
 
         SubscribeLocalEvent<SlimeComponent, ExaminedEvent>(OnExamined);
+        SubscribeLocalEvent<SlimeComponent, ComponentStartup>(OnSlimeStartup);
+    }
+
+    private void OnSlimeStartup(Entity<SlimeComponent> ent, ref ComponentStartup args)
+    {
+        ent.Comp.Stomach = _containerSystem.EnsureContainer<Container>(ent, "stomach");
     }
 
     public override void Update(float frameTime)

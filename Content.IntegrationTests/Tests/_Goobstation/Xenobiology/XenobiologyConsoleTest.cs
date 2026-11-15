@@ -158,6 +158,35 @@ public sealed class XenobiologyConsoleTest
     }
 
     [Test]
+    public async Task ConsoleSessionStopsWhenCameraIsRemovedWhileCursorIsStationary()
+    {
+        var pair = await PoolManager.GetServerClient();
+        var ctx = await Setup(pair);
+
+        await ctx.Server.WaitPost(() =>
+        {
+            ActivateConsole(ctx);
+            var console = ctx.EntMan.GetComponent<XenobiologyConsoleComponent>(ctx.Console);
+            Assert.That(console.RemoteEntity, Is.Not.Null);
+
+            ctx.EntMan.DeleteEntity(ctx.Camera);
+            ctx.EntMan.GetComponent<XenobiologyConsoleControllerComponent>(ctx.User).NextValidationTime = TimeSpan.Zero;
+        });
+
+        await pair.RunTicksSync(2);
+
+        await ctx.Server.WaitPost(() =>
+        {
+            var console = ctx.EntMan.GetComponent<XenobiologyConsoleComponent>(ctx.Console);
+            Assert.That(console.ActiveUser, Is.Null);
+            Assert.That(console.RemoteEntity, Is.Null);
+            Assert.That(ctx.EntMan.HasComponent<XenobiologyConsoleControllerComponent>(ctx.User), Is.False);
+        });
+
+        await pair.CleanReturnAsync();
+    }
+
+    [Test]
     public async Task ConsoleSessionStopsWhenAccessIsRevoked()
     {
         var pair = await PoolManager.GetServerClient();
@@ -718,9 +747,9 @@ public sealed class XenobiologyConsoleTest
     private static EntityUid SpawnTestSlime(TestContext ctx, EntityCoordinates coordinates)
     {
         var slime = ctx.EntMan.SpawnEntity(SlimePrototype, coordinates);
-        var slimeComp = ctx.EntMan.EnsureComponent<SlimeComponent>(slime);
-        var containers = ctx.EntMan.System<SharedContainerSystem>();
-        slimeComp.Stomach = containers.EnsureContainer<Container>(slime, "stomach");
+        Assert.That(ctx.EntMan.TryGetComponent<SlimeComponent>(slime, out var slimeComp), Is.True);
+        Assert.That(slimeComp!.Stomach, Is.Not.Null);
+        Assert.That(slimeComp.Stomach.Owner, Is.EqualTo(slime));
         return slime;
     }
 
